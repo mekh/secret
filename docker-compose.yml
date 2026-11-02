@@ -4,8 +4,10 @@ services:
     # To build from source instead, comment out `image:` and uncomment `build: .`.
     image: ghcr.io/largerio/secret:1
     # build: .
+    # Loopback by default: only a reverse proxy on this host reaches the app.
+    # BIND_ADDRESS=0.0.0.0 publishes it on every interface.
     ports:
-      - "${PORT:-3000}:3000"
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-3000}:3000"
     volumes:
       - secret-data:/app/data
     environment:

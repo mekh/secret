@@ -39,9 +39,10 @@ docker compose up -d
 ```
 
 The container pulls `ghcr.io/largerio/secret:1` (the latest 1.x release),
-creates a persistent Docker volume for your data, and serves the app on port
-`3000`.
-Open `http://<your-host>:3000` and you're live.
+creates a persistent Docker volume for your data, and serves the app on
+`127.0.0.1:3000`, for a reverse proxy on the same host.
+Open `http://localhost:3000` and you're live. To reach it from another machine
+without a proxy, set `BIND_ADDRESS=0.0.0.0` in `.env`.
 
 Plain HTTP is fine to try it out on a local network, but put HTTPS in front
 before sharing real secrets: over HTTP the link, and so the decryption key,
@@ -143,6 +144,7 @@ it in one click; Render will then prompt you for the two required values
    - `docker-compose.yml` (from the link above)
    - `.env` — start from `.env.example`, then set `SERVER_ENCRYPTION_KEY`
      (`openssl rand -base64 32`) and `APP_URL` (e.g. `https://secret.example.com`).
+     Add `BIND_ADDRESS=0.0.0.0` unless DSM's own reverse proxy is the only way in.
 3. **Create the project.** Container Manager → **Project** → **Create** →
    set the path to `docker/secret` and import the existing `docker-compose.yml`.
 4. **Run it.** Build/Start the project — Container Manager pulls
@@ -408,9 +410,10 @@ without one, it asks `/api/cap/` for a challenge, and the login stops it there.
 
 Two things keep the login from being walked around:
 
-- The app must be reachable through the proxy alone. A published port `3000` is
-  a way in without it (`docker-compose.tls.yml` publishes Caddy's ports only),
-  and so is the API's own port: leave `API_HOST` unset.
+- The app must be reachable through the proxy alone. A port `3000` published
+  on every interface (`BIND_ADDRESS=0.0.0.0`) is a way in without it
+  (`docker-compose.tls.yml` publishes Caddy's ports only), and so is the API's
+  own port: leave `BIND_ADDRESS` and `API_HOST` unset.
 - The proxy must match the path once cleaned up, since the app reads
   `/api/v1/../cap/challenge` as `/api/cap/challenge`. Caddy and Traefik do,
   with the rules below.
@@ -1053,7 +1056,7 @@ docker compose up -d --force-recreate
 
 Set a different host port in `.env` (e.g. `PORT=8080`), then
 `docker compose up -d --force-recreate`. The app will be reachable on
-`http://<host>:8080`.
+`http://localhost:8080`, or `http://<host>:8080` with `BIND_ADDRESS=0.0.0.0`.
 
 ### "Permission denied" on `/app/data` (bind mounts)
 
