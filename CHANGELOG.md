@@ -20,6 +20,10 @@ image. Each version links to its GitHub release. The SDK has
 
 - With the SDK, a format 0 link whose key was cut short in transit spent the note's read before the key was refused, which burned a note read once; and a malformed note id could aim a request at another endpoint of the instance, so that a check could spend a format 0 note's read. The SDK now refuses both before any request. The web app already checked a link's shape. (#270)
 
+### Upgrade notes
+
+- After downloading the new `docker-compose.yml`, the app answers on `127.0.0.1` only. Set `BIND_ADDRESS=0.0.0.0` in `.env` if anything reaches port `3000` from another machine, or from a proxy outside this compose project that targets the host's address.
+
 ## [1.7.0] - 2026-10-30
 
 ### Added

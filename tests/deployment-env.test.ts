@@ -34,11 +34,11 @@ function forwardedVariables(compose: string): ReadonlyArray<string> {
 }
 
 /**
- * `PORT` is consumed by the `ports:` mapping (inside the container the web
- * server always listens on 3000), and `HOST` is fixed by the image. Neither
- * belongs in `environment:`.
+ * `PORT` and `BIND_ADDRESS` are consumed by the `ports:` mapping (inside the
+ * container the web server always listens on 3000), and `HOST` is fixed by the
+ * image. None belongs in `environment:`.
  */
-const NOT_FORWARDED = new Set(["PORT", "HOST"]);
+const NOT_FORWARDED = new Set(["PORT", "BIND_ADDRESS", "HOST"]);
 
 describe("docker-compose.yml", () => {
 	it("forwards every variable .env.example documents", () => {

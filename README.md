@@ -238,6 +238,7 @@ All settings via environment variables. See [.env.example](.env.example) for the
 | `RATE_LIMIT_MULTIPLIER` | `1` | Scales every per-IP rate limit. Raise it when many legitimate users share one apparent address (corporate NAT, VPN) |
 | `CHUNK_SIZE` | `4194304` | Chunk size for large uploads (4 MB). The web app follows it; SDK clients must pass the same value as `chunkSize` |
 | `MAX_CHUNKED_FILE_SIZE` | `524288000` | Max size of a large note's files (500 MB). A note may take a little more room: its padding, at most 6.25% (0.8% at 500 MB) |
+| `BIND_ADDRESS` | `127.0.0.1` | Host address compose publishes `PORT` on: the loopback lets only a reverse proxy on the same host in. `0.0.0.0` opens it to the network |
 | `PORT` | `3000` | Host port compose publishes. Platforms that inject it (Render, Railway, Cloud Run) serve the site on it — the API stays internal on `API_PORT` (`3001`) |
 
 On/off settings (`ALLOW_SERVER_KEY_CHANGE`, `S3_FORCE_PATH_STYLE`, `STORAGE_RECONCILE`, `DEBUG`) accept `true` or `1` for on, and `false` or `0` for off; blank keeps the default. Any other value, like any invalid setting, stops the server at startup.

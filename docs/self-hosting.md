@@ -114,7 +114,9 @@ Coolify gives you automatic HTTPS through its built-in proxy.
 1. **Stacks** → **Add stack** → **Web editor**.
 2. Paste this repo's `docker-compose.yml`.
 3. Fill in the environment variables (at least `SERVER_ENCRYPTION_KEY` and
-   `APP_URL`) in the editor, then **Deploy the stack**.
+   `APP_URL`) in the editor, then **Deploy the stack**. Add
+   `BIND_ADDRESS=0.0.0.0` unless a reverse proxy on the same host is the only
+   way in.
 
 ### Railway / Render (PaaS)
 
@@ -410,10 +412,10 @@ without one, it asks `/api/cap/` for a challenge, and the login stops it there.
 
 Two things keep the login from being walked around:
 
-- The app must be reachable through the proxy alone. A port `3000` published
-  on every interface (`BIND_ADDRESS=0.0.0.0`) is a way in without it
-  (`docker-compose.tls.yml` publishes Caddy's ports only), and so is the API's
-  own port: leave `BIND_ADDRESS` and `API_HOST` unset.
+- The app must be reachable through the proxy alone: leave `BIND_ADDRESS` and
+  `API_HOST` unset. A port `3000` published on every interface
+  (`BIND_ADDRESS=0.0.0.0`) is a way in without the proxy, and so is the API's
+  own port. `docker-compose.tls.yml` publishes Caddy's ports only.
 - The proxy must match the path once cleaned up, since the app reads
   `/api/v1/../cap/challenge` as `/api/cap/challenge`. Caddy and Traefik do,
   with the rules below.
