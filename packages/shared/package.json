@@ -29,7 +29,9 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./auth": "./src/auth.ts",
-		"./linger": "./src/linger.ts"
+		"./flag": "./src/flag.ts",
+		"./linger": "./src/linger.ts",
+		"./robots": "./src/robots.ts"
 	},
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json",

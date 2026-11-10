@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { NO_INDEX } from "@largerio/secret-shared/robots";
 import { Hono } from "hono";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 // Import the app factory first: it pulls in `@hono/zod-openapi`, which extends
@@ -208,6 +209,26 @@ describe("createApp — unversioned routes", () => {
 		expect(res.headers.get("content-type")).toContain("application/xml");
 		const body = await res.text();
 		expect(body).toContain("<loc>https://secret.test/</loc>");
+	});
+
+	it("names no sitemap and says noindex everywhere when search indexing is off", async () => {
+		const app = makeApp(buildConfig({ searchIndexing: false }));
+
+		const robots = await app.request("/robots.txt");
+		const sitemap = await app.request("/sitemap.xml");
+		const config = await app.request("/api/v1/config");
+
+		expect(await robots.text()).not.toContain("Sitemap:");
+		expect(sitemap.status).toBe(404);
+		[robots, sitemap, config].forEach((res) => {
+			expect(res.headers.get("x-robots-tag")).toBe(NO_INDEX);
+		});
+	});
+
+	it("leaves indexing to crawlers by default", async () => {
+		const res = await makeApp().request("/robots.txt");
+
+		expect(res.headers.get("x-robots-tag")).toBeNull();
 	});
 
 	it("allows CORS from APP_URL's origin, whatever its trailing slash", async () => {

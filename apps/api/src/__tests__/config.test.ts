@@ -236,6 +236,7 @@ describe("parseConfig", () => {
 				read: (config) => config.storage.s3?.forcePathStyle,
 				byDefault: false,
 			},
+			SEARCH_INDEXING: { read: (config) => config.searchIndexing, byDefault: true },
 			STORAGE_RECONCILE: { read: (config) => config.storageReconcile, byDefault: true },
 		};
 

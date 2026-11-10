@@ -10,10 +10,15 @@ import {
 } from "node:http";
 import type { AddressInfo } from "node:net";
 import { lingerOnClose } from "@largerio/secret-shared/linger";
+import { NO_INDEX } from "@largerio/secret-shared/robots";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AddressConfig } from "../clientAddress.js";
 import { ORIGIN_HOST_HEADER, ORIGIN_PROTOCOL_HEADER } from "../origin.js";
-import { createRequestListener, parseApiTarget, type SvelteKitHandler } from "../server.js";
+import {
+	createRequestListener,
+	parseApiTarget,
+	type ServerOptions,
+	type SvelteKitHandler,
+} from "../server.js";
 
 interface Received {
 	method: string;
@@ -107,12 +112,17 @@ const handler = vi.fn<SvelteKitHandler>((_req, res) => {
 
 const servers: Server[] = [];
 
-async function startWeb(
-	address: AddressConfig = { addressHeader: "", xffDepth: 1 },
-	target = apiTarget,
-	origin: URL | undefined = undefined,
-): Promise<string> {
-	const web = createServer(createRequestListener({ handler, apiTarget: target, address, origin }));
+async function startWeb(options: Partial<Omit<ServerOptions, "handler">> = {}): Promise<string> {
+	const web = createServer(
+		createRequestListener({
+			handler,
+			apiTarget,
+			address: { addressHeader: "", xffDepth: 1 },
+			origin: undefined,
+			searchIndexing: true,
+			...options,
+		}),
+	);
 	// As index.ts runs it.
 	lingerOnClose(web);
 	servers.push(web);
@@ -252,7 +262,7 @@ describe("API requests", () => {
 	});
 
 	it("replace a client-supplied X-Forwarded-For with the resolved address", async () => {
-		const web = await startWeb({ addressHeader: "x-forwarded-for", xffDepth: 1 });
+		const web = await startWeb({ address: { addressHeader: "x-forwarded-for", xffDepth: 1 } });
 
 		await rawRequest(web, {
 			path: "/api/health",
@@ -264,7 +274,7 @@ describe("API requests", () => {
 	});
 
 	it("drop X-Forwarded-For when the client address cannot be resolved", async () => {
-		const web = await startWeb({ addressHeader: "cf-connecting-ip", xffDepth: 1 });
+		const web = await startWeb({ address: { addressHeader: "cf-connecting-ip", xffDepth: 1 } });
 
 		await rawRequest(web, { path: "/api/health", headers: { "x-forwarded-for": "6.6.6.6" } });
 
@@ -351,7 +361,7 @@ describe("API requests", () => {
 		});
 		lingerOnClose(refusing);
 		servers.push(refusing);
-		const web = await startWeb(undefined, await listen(refusing));
+		const web = await startWeb({ apiTarget: await listen(refusing) });
 		const body = Buffer.alloc(4 * 1024 * 1024);
 
 		const statuses: number[] = [];
@@ -364,9 +374,20 @@ describe("API requests", () => {
 		expect(statuses).toEqual(Array(20).fill(401));
 	});
 
+	it("say noindex on the 502 when search indexing is off", async () => {
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+		const web = await startWeb({ apiTarget: "http://127.0.0.1:1", searchIndexing: false });
+
+		const res = await rawRequest(web, { path: "/api/health" });
+
+		expect(res.status).toBe(502);
+		expect(res.headers["x-robots-tag"]).toBe(NO_INDEX);
+		log.mockRestore();
+	});
+
 	it("answer 502 when the API is unreachable", async () => {
 		const log = vi.spyOn(console, "error").mockImplementation(() => {});
-		const web = await startWeb(undefined, "http://127.0.0.1:1");
+		const web = await startWeb({ apiTarget: "http://127.0.0.1:1" });
 
 		const res = await rawRequest(web, { path: "/api/health" });
 
@@ -388,7 +409,7 @@ describe("page requests", () => {
 	});
 
 	it("carry the configured origin to SvelteKit, whatever the client claimed", async () => {
-		const web = await startWeb(undefined, apiTarget, new URL("http://nas.local:3000"));
+		const web = await startWeb({ origin: new URL("http://nas.local:3000") });
 
 		await rawRequest(web, {
 			path: "/",
@@ -424,6 +445,22 @@ describe("page requests", () => {
 		await rawRequest(web, { path: "//[" });
 
 		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	it("say noindex when search indexing is off", async () => {
+		const web = await startWeb({ searchIndexing: false });
+
+		const res = await rawRequest(web, { path: "/" });
+
+		expect(res.headers["x-robots-tag"]).toBe(NO_INDEX);
+	});
+
+	it("leave indexing to crawlers by default", async () => {
+		const web = await startWeb();
+
+		const res = await rawRequest(web, { path: "/" });
+
+		expect(res.headers["x-robots-tag"]).toBeUndefined();
 	});
 
 	it("answer 404 when SvelteKit passes them on", async () => {

@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import process from "node:process";
+import { parseFlag } from "@largerio/secret-shared/flag";
 import { lingerOnClose } from "@largerio/secret-shared/linger";
 import { parseAddressConfig } from "./clientAddress.js";
 import { ORIGIN_ADAPTER_ENV, parseOrigin } from "./origin.js";
@@ -24,6 +25,8 @@ const server = createServer(
 		apiTarget: parseApiTarget(process.env["API_URL"]),
 		address: parseAddressConfig(process.env),
 		origin,
+		searchIndexing:
+			parseFlag({ name: "SEARCH_INDEXING", value: process.env["SEARCH_INDEXING"] }) ?? true,
 	}),
 );
 
