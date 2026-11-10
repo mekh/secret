@@ -13,6 +13,7 @@ import {
 	MIN_EXPIRY_SECONDS,
 	withoutTrailingSlashes,
 } from "@largerio/secret-shared";
+import { parseFlag } from "@largerio/secret-shared/flag";
 import { buildTrustedBlockList } from "./middleware/rateLimit.js";
 import type { StorageConfig, StorageType } from "./storage/index.js";
 
@@ -29,16 +30,9 @@ function readEnvNumber(value: string | undefined, fallback: number): number {
 	return Number(value);
 }
 
-/**
- * On: "1" or "true". Off: "0" or "false". Blank keeps the default. Anything
- * else is refused, so a typo such as `yes` cannot silently mean off.
- */
+/** An on/off setting (see parseFlag); a value that is neither is a ConfigError. */
 function readEnvBoolean(name: string, value: string | undefined, fallback = false): boolean {
-	const normalized = (value ?? "").trim().toLowerCase();
-	if (normalized === "") return fallback;
-	if (normalized === "1" || normalized === "true") return true;
-	if (normalized === "0" || normalized === "false") return false;
-	throw new ConfigError(`${name} must be true or false (or 1 or 0)`);
+	return parseFlag({ name, value, errorClass: ConfigError }) ?? fallback;
 }
 
 /**
@@ -156,6 +150,8 @@ export interface AppConfig {
 	/** Opt-in escape hatch for the server-key fingerprint guard (see keyGuard.ts). */
 	readonly allowServerKeyChange: boolean;
 	readonly debug: boolean;
+	/** Off: every answer says noindex, and robots.txt names no sitemap. */
+	readonly searchIndexing: boolean;
 	/** Bearer token for `GET /api/metrics`; empty leaves the endpoint off (404). */
 	readonly metricsToken: string;
 	/** How long a shutdown waits for in-flight requests before it cuts them. */
@@ -238,6 +234,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): AppConfig {
 		env["ALLOW_SERVER_KEY_CHANGE"],
 	);
 	const debug = readEnvBoolean("DEBUG", env["DEBUG"]);
+	const searchIndexing = readEnvBoolean("SEARCH_INDEXING", env["SEARCH_INDEXING"], true);
 	const metricsToken = readSecret(env, "METRICS_TOKEN")?.trim() ?? "";
 	const shutdownTimeout = readEnvNumber(env["SHUTDOWN_TIMEOUT"], DEFAULT_SHUTDOWN_TIMEOUT);
 
@@ -437,6 +434,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): AppConfig {
 		rateLimitMultiplier,
 		allowServerKeyChange,
 		debug,
+		searchIndexing,
 		metricsToken,
 		shutdownTimeoutMs: shutdownTimeout * 1000,
 	};

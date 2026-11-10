@@ -1,4 +1,5 @@
 import type { IncomingMessage, RequestListener, ServerResponse } from "node:http";
+import { NO_INDEX } from "@largerio/secret-shared/robots";
 import { isApiPath, proxyToApi } from "./apiProxy.js";
 import { type AddressConfig, resolveClientAddress } from "./clientAddress.js";
 import { applyOrigin } from "./origin.js";
@@ -16,6 +17,8 @@ export interface ServerOptions {
 	readonly address: AddressConfig;
 	/** The instance's public origin (ORIGIN), or undefined to let adapter-node derive it. */
 	readonly origin: URL | undefined;
+	/** SEARCH_INDEXING: off, every answer says noindex. */
+	readonly searchIndexing: boolean;
 }
 
 /**
@@ -45,6 +48,11 @@ export function createRequestListener(options: ServerOptions): RequestListener {
 	return (req, res) => {
 		// Parsed like a browser would, so `/api/../note` is a page, not the API.
 		const url = URL.parse(req.url as string, "http://internal");
+
+		// The API sets its own; this covers what the web server answers itself, a 502 included.
+		if (!options.searchIndexing) {
+			res.setHeader("X-Robots-Tag", NO_INDEX);
+		}
 
 		if (url && isApiPath(url.pathname)) {
 			proxyToApi(req, res, {

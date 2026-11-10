@@ -223,6 +223,7 @@ All settings via environment variables. See [.env.example](.env.example) for the
 | `SERVER_ENCRYPTION_KEY` | _auto_ | AES-256-GCM key (32 bytes, base64). Auto-generated and persisted in the data volume on first launch if unset; set it explicitly to control/back up the key yourself |
 | `APP_NAME` | `Secret` | Application name |
 | `APP_URL` | `http://localhost:3000` | Public URL (`http://` or `https://`) |
+| `SEARCH_INDEXING` | `true` | `false` asks search engines not to index the instance: every page and API answer carries `X-Robots-Tag: noindex, nofollow`, and `robots.txt` names no sitemap (`/sitemap.xml` answers `404`) |
 | `APP_PRIMARY_COLOR` | — | Accent color as hex, e.g. `#1d4ed8` (default: indigo). The gradients and the dark-theme shade are derived from it. See `.env.example` for footer and social image |
 | `MAX_FILE_SIZE` | `10485760` | Max file size in bytes (10 MB) |
 | `MAX_FILES_PER_NOTE` | `10` | Max files per note (cannot exceed 10) |
@@ -240,7 +241,7 @@ All settings via environment variables. See [.env.example](.env.example) for the
 | `MAX_CHUNKED_FILE_SIZE` | `524288000` | Max size of a large note's files (500 MB). A note may take a little more room: its padding, at most 6.25% (0.8% at 500 MB) |
 | `PORT` | `3000` | Host port compose publishes. Platforms that inject it (Render, Railway, Cloud Run) serve the site on it — the API stays internal on `API_PORT` (`3001`) |
 
-On/off settings (`ALLOW_SERVER_KEY_CHANGE`, `S3_FORCE_PATH_STYLE`, `STORAGE_RECONCILE`, `DEBUG`) accept `true` or `1` for on, and `false` or `0` for off; blank keeps the default. Any other value, like any invalid setting, stops the server at startup.
+On/off settings (`ALLOW_SERVER_KEY_CHANGE`, `S3_FORCE_PATH_STYLE`, `STORAGE_RECONCILE`, `SEARCH_INDEXING`, `DEBUG`) accept `true` or `1` for on, and `false` or `0` for off; blank keeps the default. Any other value, like any invalid setting, stops the server at startup.
 
 > **Warning:** Never change `SERVER_ENCRYPTION_KEY` after deployment — all existing notes become unreadable. The server stores a fingerprint of the key and **refuses to start** if it changes while notes exist, so a mistake fails loudly instead of silently bricking your data. When the key is auto-generated it lives at `.encryption_key` inside the data volume; read it back with `docker compose exec app cat /app/data/.encryption_key` and keep a copy apart from your backups (see [Backup & restore](docs/self-hosting.md#backup--restore)).
 

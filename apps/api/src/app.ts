@@ -29,10 +29,12 @@ import { createRequestId, createRequestLogger } from "./middleware/requestContex
 import {
 	createCors,
 	createDocsSecurityHeaders,
+	createNoIndex,
 	createSecurityHeaders,
 } from "./middleware/security.js";
 import { createNotesService } from "./notes/service.js";
 import { createCapRoutes } from "./routes/cap.js";
+import { createCrawlerRoutes } from "./routes/crawlers.js";
 import { noteErrorToHttp } from "./routes/notes/errorStatus.js";
 import { createNotesRoutes } from "./routes/notes/index.js";
 import type { StorageBackend } from "./storage/index.js";
@@ -106,6 +108,9 @@ export function createApp(deps: CreateAppDeps): CreatedApp {
 
 	app.use("/api/v1/docs", createDocsSecurityHeaders());
 	app.use("*", createSecurityHeaders({ skipPaths: ["/api/v1/docs"] }));
+	if (!config.searchIndexing) {
+		app.use("*", createNoIndex());
+	}
 	app.use("*", createCors([new URL(config.appUrl).origin]));
 	app.use("*", compress());
 
@@ -207,20 +212,10 @@ export function createApp(deps: CreateAppDeps): CreatedApp {
 		app.get(METRICS_PATH, createMetricsHandler(metrics, config.metricsToken));
 	}
 
-	app.get("/robots.txt", (c) => {
-		c.header("Content-Type", "text/plain");
-		c.header("Cache-Control", "public, max-age=86400");
-		return c.body(
-			`User-agent: *\nAllow: /\nDisallow: /note/\nDisallow: /api/\n\nSitemap: ${config.appUrl}/sitemap.xml\n`,
-		);
-	});
-	app.get("/sitemap.xml", (c) => {
-		c.header("Content-Type", "application/xml");
-		c.header("Cache-Control", "public, max-age=86400");
-		return c.body(
-			`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n  <url>\n    <loc>${config.appUrl}/</loc>\n    <xhtml:link rel="alternate" hreflang="en" href="${config.appUrl}/" />\n    <xhtml:link rel="alternate" hreflang="fr" href="${config.appUrl}/" />\n    <xhtml:link rel="alternate" hreflang="x-default" href="${config.appUrl}/" />\n    <changefreq>monthly</changefreq>\n    <priority>1.0</priority>\n  </url>\n</urlset>\n`,
-		);
-	});
+	app.route(
+		"/",
+		createCrawlerRoutes({ appUrl: config.appUrl, searchIndexing: config.searchIndexing }),
+	);
 
 	// --- Cap: Cap's own format, not versioned, specified in PROTOCOL.md ("Proof of work") ---
 

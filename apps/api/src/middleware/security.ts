@@ -1,3 +1,4 @@
+import { NO_INDEX } from "@largerio/secret-shared/robots";
 import type { MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
@@ -79,4 +80,12 @@ export function createCors(allowedOrigins: ReadonlyArray<string>): MiddlewareHan
 		],
 		maxAge: 86400,
 	});
+}
+
+/** Set after the handler, so refusals and errors carry it too. */
+export function createNoIndex(): MiddlewareHandler {
+	return async (c, next) => {
+		await next();
+		c.header("X-Robots-Tag", NO_INDEX);
+	};
 }

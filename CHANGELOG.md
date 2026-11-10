@@ -10,6 +10,7 @@ image. Each version links to its GitHub release. The SDK has
 ### Added
 
 - A command line, `secret`, published to npm as `@largerio/secret-cli`, sends and reads notes from a terminal or a script: text on stdin, files as arguments, `--json` for scripts. It writes with an API key, or without one by solving the instance's proof of work, as the browser does, which [PROTOCOL.md](https://github.com/largerio/secret/blob/main/PROTOCOL.md#proof-of-work) now specifies. Received files never overwrite anything and show only once the whole note is checked. (#270)
+- `SEARCH_INDEXING=false` asks search engines not to index an instance: every page and API answer carries `X-Robots-Tag: noindex, nofollow`, and `robots.txt` names no sitemap. Indexing stays on by default.
 - The SDK exports the protocol's limits (`MAX_TEXT_SIZE`, `MAX_READS`, `NOTE_ID_LENGTH`…), to check a note before it is sent. (#270)
 
 ### Fixed
